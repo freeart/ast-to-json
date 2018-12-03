@@ -6,7 +6,8 @@ function graphqlResolverAst(ast) {
 		resolveTo: ast.returnType.toString(),
 		fields: {},
 		args: null,
-		fragments: {}
+		fragments: {},
+		variables: ast.variableValues
 	};
 
 	let path = ast.path;
@@ -38,7 +39,7 @@ function resolveSelectionSet(fieldNode, state) {
 	}, {});
 
 	state.args = fieldNode.arguments.reduce((projections, argument) => {
-		projections[argument.name.value] = getArgumentValue(argument.value);
+		projections[argument.name.value] = getArgumentValue(argument.value, state.variables);
 		return projections;
 	}, {});
 
@@ -57,7 +58,7 @@ function getSelections(sel) {
 	return obj;
 }
 
-function getArgumentValue(argumentValue) {
+function getArgumentValue(argumentValue, variables) {
 	switch (argumentValue.kind) {
 		case 'StringValue':
 		case 'BooleanValue':
@@ -74,6 +75,8 @@ function getArgumentValue(argumentValue) {
 				obj[field.name.value] = getArgumentValue(field.value);
 			});
 			return obj;
+		case 'Variable':
+			return variables[argumentValue.name.value];
 		default:
 			throw new Error(`Unexpected GraphQL argument type "${argumentValue.kind}"`);
 	}
