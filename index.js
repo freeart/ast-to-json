@@ -33,7 +33,7 @@ function graphqlResolverAst(ast) {
 };
 
 function resolveSelectionSet(fieldNode, state) {
-	state.fields = fieldNode.selectionSet.selections.map(sel => getSelections(sel)).reduce((projections, selection) => {
+	state.fields = fieldNode.selectionSet.selections.map(sel => getSelections(sel, state.variables)).reduce((projections, selection) => {
 		projections[selection.name] = selection
 		return projections;
 	}, {});
@@ -46,12 +46,13 @@ function resolveSelectionSet(fieldNode, state) {
 	return state;
 }
 
-function getSelections(sel) {
+function getSelections(sel, variables) {
 	const obj = { kind: sel.kind, name: sel.name.value, hasSelections: !!sel.selectionSet };
 	if (obj.hasSelections) {
 		Object.assign(obj, {
 			fields: {},
-			args: null
+			args: null,
+			variables: variables
 		})
 		resolveSelectionSet(sel, obj)
 	}
@@ -68,11 +69,11 @@ function getArgumentValue(argumentValue, variables) {
 		case 'FloatValue':
 			return parseFloat(argumentValue.value);
 		case 'ListValue':
-			return argumentValue.values.map(elem => getArgumentValue(elem));
+			return argumentValue.values.map(elem => getArgumentValue(elem, variables));
 		case 'ObjectValue':
 			const obj = {};
 			argumentValue.fields.forEach(field => {
-				obj[field.name.value] = getArgumentValue(field.value);
+				obj[field.name.value] = getArgumentValue(field.value, variables);
 			});
 			return obj;
 		case 'Variable':
