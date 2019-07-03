@@ -33,10 +33,12 @@ function graphqlResolverAst(ast) {
 };
 
 function resolveSelectionSet(fieldNode, state) {
-	state.fields = fieldNode.selectionSet.selections.map(sel => getSelections(sel, state.variables)).reduce((projections, selection) => {
-		projections[selection.name] = selection
-		return projections;
-	}, {});
+	state.fields = fieldNode.selectionSet.selections
+		.map(sel => getSelections(sel, state.variables))
+		.reduce((projections, selection) => {
+			projections[selection.name] = selection
+			return projections;
+		}, {});
 
 	state.args = fieldNode.arguments.reduce((projections, argument) => {
 		projections[argument.name.value] = getArgumentValue(argument.value, state.variables);
@@ -49,6 +51,9 @@ function resolveSelectionSet(fieldNode, state) {
 function getSelections(sel, variables) {
 	const obj = { kind: sel.kind, name: sel.name.value, hasSelections: !!sel.selectionSet };
 	if (obj.hasSelections) {
+		if (sel.selectionSet.selections[0].kind == "InlineFragment") {
+			sel.selectionSet = sel.selectionSet.selections[0].selectionSet
+		}
 		Object.assign(obj, {
 			fields: {},
 			args: null,
